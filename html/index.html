@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+</head>
+<body>
+<h1>Notification for all</h1>
+<h2>Your ID: <span id="ws-id"></span></h2>
+<form action="" onsubmit="send_broadcast(event)">
+    <label for="messageText">Message</label>
+    <input type="text" id="messageText" autocomplete="off"/>
+    <button>Send</button>
+</form>
+
+<div id="tournaments">
+    <h1>Register Tournament</h1>
+    <h2 id="tournament_name">Some tournament</h2>
+    <p id="tournament_date"></p>
+    <button onclick="send_private(event)">Register</button>
+</div>
+
+<ul id='messages'>
+</ul>
+
+<script id="private">
+    const random = (min, max) => Math.floor(Math.random() * (max - min)) + min
+
+    var user_id = 'ac9c2093-e682-4cc1-a389-1454228d3a86'
+    document.querySelector("#ws-id").textContent = user_id
+
+    var ws = new WebSocket(`ws://127.0.0.1:8000/api/notification/ws/${user_id}`)
+
+    var tournament_date = Date.now() + 0.5 * 60 * 1000
+    document.getElementById("tournament_date").innerHTML = tournament_date.toString()
+
+    function process_message(event) {
+        var messages = document.getElementById('messages')
+        var message = document.createElement('li')
+        var content = document.createTextNode(event.data)
+        message.appendChild(content)
+        messages.appendChild(message)
+    }
+
+    ws.onmessage = process_message
+
+    function send_private(event) {
+        var tournament_name = document.getElementById('tournament_name').textContent
+        var tournament_date = document.getElementById('tournament_date').textContent / 1000
+        var message_now = tournament_name + ' will stars at ' + tournament_date
+        var message_delayed = tournament_name + ' is starting now ' + tournament_date
+        var notification_now = {'type': 'private', 'date': Date.now() / 1000, 'message': message_now}
+        var notification_delayed = {'type': 'private', 'date': tournament_date, 'message': message_delayed}
+        ws.send(JSON.stringify(notification_now))
+        ws.send(JSON.stringify(notification_delayed))
+        event.preventDefault()
+    }
+
+    function send_broadcast(event) {
+        var input = document.getElementById('messageText')
+        var message = input.value
+        var notification = {'type': 'broadcast', 'date': Date.now() / 1000, 'message': message}
+        ws.send(JSON.stringify(notification))
+        input.value = ''
+        event.preventDefault()
+    }
+</script>
+
+</body>
+</html>
